@@ -25,9 +25,9 @@ class ItemController extends Controller
      */
     public function index()
     {
-        // $items = Item::all();
-        // $items = DB::table('item')->join('stock', 'item.item_id', '=', 'stock.item_id')->get();
-        // $items = Item::has('stock')->get();
+        $items = Item::all();
+        $items = DB::table('item')->join('stock', 'item.item_id', '=', 'stock.item_id')->get();
+        $items = Item::has('stock')->get();
         // dd($items);
         return view('item.index', compact('items'));
     }
@@ -233,7 +233,8 @@ class ItemController extends Controller
         return redirect()->route('getCart');
     }
 
-    public function postCheckout(){
+    public function postCheckout()
+    {
         if (!Session::has('cart')) {
             return redirect()->route('getCart');
         }
@@ -246,46 +247,45 @@ class ItemController extends Controller
 
             $customer =  Customer::where('user_id', Auth::id())->first();
             // dd($cart->items);
-	        // $customer->orders()->save($order);
+            // $customer->orders()->save($order);
             $order->customer_id = $customer->customer_id;
             $order->date_placed = now();
             $order->date_shipped = Carbon::now()->addDays(5);
             // $order->shipvia = $request->shipper_id;
             // $order->shipping = $request->shipping;
-            $order->shipping = 10.00  ;
+            $order->shipping = 10.00;
             $order->status = 'Processing';
             $order->save();
             // dd($cart->items);
-    	    foreach($cart->items as $items){
-        		$id = $items['item']['item_id'];
+            foreach ($cart->items as $items) {
+                $id = $items['item']['item_id'];
                 // dd($id);
                 // DB::table('orderline')->insert(
-                //     ['item_id' => $id, 
+                //     ['item_id' => $id,
                 //      'orderinfo_id' => $order->orderinfo_id,
                 //      'quantity' => $items['qty']
                 //     ]
                 //     );
-                    $order->items()->attach($order->orderinfo_id, [
-                        'quantity' => $items['qty'],
-                        'item_id' => $id,
-                    ]);
-               
-        		
+                $order->items()->attach($order->orderinfo_id, [
+                    'quantity' => $items['qty'],
+                    'item_id' => $id,
+                ]);
+
+
                 $stock = Stock::find($id);
-          		$stock->quantity = $stock->quantity - $items['qty'];
-         		$stock->save();
+                $stock->quantity = $stock->quantity - $items['qty'];
+                $stock->save();
             }
             // dd($order);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             // dd($e->getMessage());
-	        DB::rollback();
+            DB::rollback();
             // dd($order);
             return redirect()->route('getCart')->with('error', $e->getMessage());
         }
-    
+
         DB::commit();
         Session::forget('cart');
-        return redirect('/')->with('success','Successfully Purchased Your Products!!!');
+        return redirect('/')->with('success', 'Successfully Purchased Your Products!!!');
     }
 }
